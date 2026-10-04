@@ -1,0 +1,22 @@
+Required Notice: Copyright (c) 2026 saxcodez (https://github.com/saxcodez)
+
+Clash Upgrade Planner is licensed under the PolyForm Noncommercial License 1.0.0
+(see LICENSE.md or https://polyformproject.org/licenses/noncommercial/1.0.0).
+Commercial use of any kind (selling, paid versions, monetized services) is not permitted.
+
+Game data
+---------
+src/gamedata.json is derived from the static game data published in
+ClashKingAssets (https://github.com/ClashKingInc/ClashKingAssets),
+which is licensed under the GNU General Public License v3.0.
+That file keeps its original license and attribution.
+
+Fonts
+-----
+Lilita One and Nunito, loaded from Google Fonts, SIL Open Font License 1.1.
+
+Trademarks
+----------
+This material is unofficial and is not endorsed by Supercell. For more information
+see Supercell's Fan Content Policy: www.supercell.com/fan-content-policy.
+Clash of Clans is a trademark of Supercell Oy.

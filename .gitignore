@@ -1,0 +1,6 @@
+# keep personal exports out of the repo
+my-export*.json
+*.private.json
+.DS_Store
+Thumbs.db
+__pycache__/

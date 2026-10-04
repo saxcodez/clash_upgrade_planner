@@ -1,0 +1,493 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Clash Upgrade Planner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#14304d;--panel:#1b3d61;--panel2:#22496f;--line:rgba(220,235,250,.14);
+  --ink:#eef3f8;--muted:#a9bdd2;--gold:#f5c518;--elixir:#e164d6;--dark:#b49af0;
+  --ore:#7fd3e8;--ok:#7ddc7d;--warn:#ff9d5c;
+  --grid:rgba(220,235,250,.05);
+  color-scheme:dark;
+}
+@media (prefers-color-scheme: light){:root:not([data-theme="dark"]){
+  --bg:#e9f0f7;--panel:#ffffff;--panel2:#f1f5fa;--line:rgba(20,48,77,.14);
+  --ink:#13283f;--muted:#4e6680;--gold:#a87b00;--elixir:#b0249f;--dark:#5b3fa8;--ore:#1b7f99;--ok:#2d8a2d;--warn:#c25a12;--grid:rgba(20,48,77,.05);color-scheme:light}}
+:root[data-theme="light"]{--bg:#e9f0f7;--panel:#ffffff;--panel2:#f1f5fa;--line:rgba(20,48,77,.14);--ink:#13283f;--muted:#4e6680;--gold:#a87b00;--elixir:#b0249f;--dark:#5b3fa8;--ore:#1b7f99;--ok:#2d8a2d;--warn:#c25a12;--grid:rgba(20,48,77,.05);color-scheme:light}
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*,*:before,*:after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Nunito,system-ui,sans-serif;
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:24px 24px}
+.wrap{max-width:1040px;margin:0 auto;padding:20px 16px 60px}
+h1,h2,h3{font-family:"Lilita One",Impact,system-ui,sans-serif;font-weight:400;letter-spacing:.01em;margin:0}
+h1{font-size:clamp(28px,5vw,40px);line-height:1.1}
+h2{font-size:24px;margin-bottom:12px}
+h3{font-size:18px;margin-bottom:8px}
+.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:18px}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:4px 12px;font-weight:800;font-size:14px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px}
+.hero-num{font-family:"Lilita One",Impact,sans-serif;font-size:clamp(56px,13vw,112px);line-height:.9;color:var(--gold);text-shadow:0 4px 0 rgba(0,0,0,.25)}
+.hero-sub{color:var(--muted);max-width:60ch}
+.lanes{margin-top:18px;display:grid;gap:10px}
+.lane{display:grid;grid-template-columns:130px 1fr 92px;gap:10px;align-items:center}
+.lane .lbl{font-weight:800}
+.lane .bar{height:22px;background:var(--panel2);border-radius:6px;overflow:hidden;position:relative}
+.lane .fill{height:100%;border-radius:6px}
+.lane .val{text-align:right;font-weight:800;font-variant-numeric:tabular-nums}
+.lane.crit .lbl::after{content:"\00a0⏳";white-space:nowrap}
+.settings{display:flex;flex-wrap:wrap;gap:14px 22px;margin-top:16px;padding-top:14px;border-top:1px dashed var(--line);font-size:14px;color:var(--muted)}
+.settings label{display:flex;align-items:center;gap:6px}
+input[type=number]{width:64px;background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:4px 6px;font:inherit}
+input[type=search]{flex:1;min-width:160px;background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font:inherit}
+.res{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.res div{background:var(--panel2);border-radius:10px;padding:10px 12px}
+.res b{display:block;font-family:"Lilita One",sans-serif;font-weight:400;font-size:24px;line-height:1.1}
+.res small{color:var(--muted)}
+.tabs{display:flex;gap:6px;margin-bottom:12px}
+button{font:inherit;cursor:pointer}
+.tab,.f{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:999px;padding:6px 14px;font-weight:800}
+.tab[aria-selected=true],.f[aria-pressed=true]{background:var(--gold);color:#1b1400;border-color:var(--gold)}
+button:focus-visible,input:focus-visible,summary:focus-visible,textarea:focus-visible{outline:3px solid var(--ore);outline-offset:2px}
+.filters{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.tools{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center}
+select{background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px;font:inherit}
+.list{display:grid;gap:6px}
+.row{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(90px,1fr) 80px minmax(80px,auto);gap:10px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 12px}
+.row .nm{font-weight:800;overflow:hidden;text-overflow:ellipsis}
+.row .nm small{display:block;color:var(--muted);font-weight:600}
+.lv{font-size:13px;color:var(--muted)}
+.lvbar{height:8px;background:var(--panel2);border-radius:4px;overflow:hidden;margin-top:3px}
+.lvbar i{display:block;height:100%;background:var(--ok)}
+.t{text-align:right;font-weight:800;font-variant-numeric:tabular-nums}
+.c{text-align:right;font-size:14px;font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap}
+.tag{display:inline-block;font-size:11px;font-weight:800;border-radius:4px;padding:0 5px;margin-left:4px;vertical-align:2px}
+.tag.up{background:var(--ore);color:#06212a}.tag.new{background:var(--warn);color:#2a1100}.tag.sc{background:var(--dark);color:#160b2e}
+.gold{color:var(--gold)}.elixir{color:var(--elixir)}.dark{color:var(--dark)}.ore{color:var(--ore)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.meter{display:grid;grid-template-columns:120px 1fr 52px;gap:8px;align-items:center;font-size:14px;margin:6px 0}
+.meter .bar{height:12px;background:var(--panel2);border-radius:6px;overflow:hidden}
+.meter .bar i{display:block;height:100%;background:var(--ok)}
+.meter span:last-child{text-align:right;font-weight:800;font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+details summary{cursor:pointer;font-weight:800}
+textarea{width:100%;min-height:120px;margin-top:10px;background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:10px;font:13px/1.4 ui-monospace,Menlo,monospace}
+.btn{background:var(--gold);color:#1b1400;border:0;border-radius:8px;padding:8px 16px;font-weight:800;margin-top:8px}
+.err{color:var(--warn);font-weight:800;margin-top:8px}
+.note{font-size:13px;color:var(--muted);margin-top:10px}
+.empty{padding:20px;text-align:center;color:var(--muted)}
+button.lane{all:unset;box-sizing:border-box;display:grid;grid-template-columns:130px 1fr 92px;gap:10px;align-items:center;cursor:pointer;padding:3px 6px;margin:0 -6px;border-radius:8px}
+button.lane:hover{box-shadow:inset 0 0 0 1px var(--line)}button.lane[aria-pressed=true]{box-shadow:inset 0 0 0 2px var(--ore)}
+button.lane:focus-visible{outline:3px solid var(--ore)}
+.bd{margin-top:12px;background:var(--panel2);border-radius:10px;padding:12px 14px}
+.stack{display:flex;height:14px;border-radius:7px;overflow:hidden;margin:8px 0 10px}
+.stack i{display:block;height:100%}
+.leg{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:14px}
+.leg span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:3px;background:var(--c);margin-right:6px}
+.linkbtn{background:none;border:0;color:var(--ore);font-weight:800;padding:0;margin-top:8px;text-decoration:underline}
+.items{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px 16px;font-size:14px}
+.items label{display:flex;justify-content:space-between;align-items:center;gap:8px;background:var(--panel2);border-radius:8px;padding:6px 10px}
+.items input{width:56px}
+.rec{background:var(--panel2);border-radius:10px;padding:10px 12px;margin-bottom:8px}
+.rec b{font-size:16px}
+.rec .why{font-size:14px;color:var(--muted)}
+.rec .nx{font-size:13px;font-weight:800;margin-top:2px}
+.tip{border-left:4px solid var(--gold);padding:6px 12px;margin:0 0 12px;background:var(--panel2);border-radius:0 8px 8px 0}
+.gems{font-family:"Lilita One",Impact,sans-serif;font-size:clamp(40px,9vw,72px);line-height:1;color:#4fd36b}
+.p2w-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-top:14px}
+.p2w-grid div{background:var(--panel2);border-radius:10px;padding:10px 12px}
+.p2w-grid b{display:block;font-family:"Lilita One",sans-serif;font-weight:400;font-size:22px}
+.p2w-grid small{color:var(--muted)}
+@media (max-width:640px){button.lane{grid-template-columns:96px 1fr 70px}}
+@media (max-width:640px){
+  .lane{grid-template-columns:96px 1fr 70px}
+  .row{grid-template-columns:1fr auto;grid-template-areas:"nm t" "lv c"}
+  .row .nm{grid-area:nm}.row .lvw{grid-area:lv}.row .t{grid-area:t}.row .c{grid-area:c}
+  .meter{grid-template-columns:96px 1fr 46px}
+}
+@media (prefers-reduced-motion:no-preference){.lane .fill{transition:width .6s ease}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div><h1>Clash Upgrade Planner</h1><div class="muted" id="sub"></div></div>
+    <div class="chips" id="chips"></div>
+  </div>
+
+  <section class="panel" aria-labelledby="h-total">
+    <h2 id="h-total" class="muted" style="font-size:18px;margin-bottom:4px">Time until everything is maxed</h2>
+    <div class="hero-num" id="heroNum">–</div>
+    <div class="hero-sub" id="heroSub"></div>
+    <div class="lanes" id="lanes" aria-label="Tap a queue to see what is in it"></div>
+    <div class="bd" id="bd"></div>
+    <div class="settings">
+      <label>Home builders <input type="number" id="optB" min="1" max="12" value="6"></label>
+      <label>Builder Base builders <input type="number" id="optBB" min="1" max="4" value="2"></label>
+      <label>Time boost % <input type="number" id="optBoost" min="0" max="90" value="0" title="e.g. 20 for Gold Pass"></label>
+      <label><input type="checkbox" id="optSC" checked> Include supercharges</label>
+      <label><input type="checkbox" id="optMiss" checked> Include not-yet-built buildings</label>
+      <label><input type="checkbox" id="optHelp" checked> Include helpers from export</label>
+      <label><input type="checkbox" id="optItems" checked> Use my magic items</label>
+    </div>
+  </section>
+
+  <section class="panel" aria-labelledby="h-res">
+    <h2 id="h-res">Resources still needed</h2>
+    <div class="res" id="res"></div>
+  </section>
+
+  <section class="panel" aria-labelledby="h-next">
+    <h2 id="h-next">Upgrade next</h2>
+    <div id="tips"></div>
+    <div class="grid2" id="recs"></div>
+    <p class="note">Rule-based picks: heroes and new buildings first, then whatever is furthest behind. Items already upgrading are skipped.</p>
+  </section>
+
+  <section class="panel" aria-labelledby="h-items">
+    <h2 id="h-items">Magic items and boosts</h2>
+    <p class="note" id="exportBoosts" style="margin-top:0"></p>
+    <div class="items" id="items"></div>
+    <div id="itemUse" style="margin-top:12px"></div>
+  </section>
+
+  <section class="panel" aria-labelledby="h-p2w">
+    <h2 id="h-p2w">Pay to win: max everything right now</h2>
+    <div class="gems" id="gems">–</div>
+    <div class="hero-sub" id="gemSub"></div>
+    <div class="p2w-grid" id="p2w"></div>
+    <div class="settings">
+      <label>Price of 14,000 gems (€) <input type="number" id="optPrice" min="1" step="0.01" value="109.99"></label>
+      <label><input type="checkbox" id="optGemRes" checked> Also buy all resources with gems</label>
+    </div>
+    <p class="note">Uses the in-game gem formulas, one purchase per level so nothing gets merged into a cheaper bulk price. Ore for equipment can't be bought freely with gems, so it's left out.</p>
+  </section>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" aria-selected="true" data-tab="list">Upgrade list</button>
+    <button class="tab" role="tab" aria-selected="false" data-tab="stats">Stats</button>
+  </div>
+
+  <section id="tab-list">
+    <div class="tools">
+      <input type="search" id="q" placeholder="Search, e.g. Inferno" aria-label="Search upgrades">
+      <select id="sort" aria-label="Sort">
+        <option value="time">Longest time first</option>
+        <option value="steps">Most levels missing</option>
+        <option value="pct">Least progress first</option>
+        <option value="name">Name</option>
+      </select>
+      <select id="qf" aria-label="Queue"><option value="all">All queues</option><option value="builder">Builders</option><option value="lab">Laboratory</option><option value="pet">Pet House</option><option value="smith">Blacksmith (ore)</option><option value="bbBuilder">BB builders</option><option value="bbLab">BB lab</option></select>
+      <select id="vil" aria-label="Village"><option value="Home">Home Village</option><option value="Builder Base">Builder Base</option><option value="all">Both villages</option></select>
+    </div>
+    <div class="filters" id="filters"></div>
+    <div class="list" id="list"></div>
+  </section>
+
+  <section id="tab-stats" hidden>
+    <div class="grid2">
+      <div class="panel"><h3>Completion by category</h3><div id="stCat"></div></div>
+      <div class="panel"><h3>Heroes</h3><div id="stHero"></div></div>
+      <div class="panel"><h3>Equipment per hero</h3><div id="stEq"></div></div>
+      <div class="panel"><h3>Biggest time sinks</h3><div id="stTop"></div></div>
+      <div class="panel"><h3>Running right now</h3><div id="stRun"></div></div>
+      <div class="panel"><h3>Fun facts</h3><div id="stFun"></div></div>
+    </div>
+  </section>
+
+  <section class="panel" style="margin-top:16px">
+    <details>
+      <summary id="loadSum">Load your own export</summary>
+      <p class="note">In Clash of Clans open Settings → More Settings, scroll down to Data Export and tap Copy. Paste the copied text here. Everything stays in your browser: no login, no API key, no connection to the game.</p>
+      <textarea id="paste" spellcheck="false" placeholder='{"tag":"#...","buildings":[...]}'></textarea>
+      <button class="btn" id="load">Analyze export</button>
+      <div class="err" id="err" role="alert"></div>
+    </details>
+    <p class="note" id="foot"></p>
+  </section>
+  <footer class="note" style="text-align:center;margin-top:24px">
+    Clash Upgrade Planner v__VERSION__ · © 2026 <a href="https://github.com/saxcodez" style="color:inherit">saxcodez</a> · PolyForm Noncommercial 1.0.0<br>
+    This material is unofficial and is not endorsed by Supercell. For more information see Supercell's Fan Content Policy: <a href="https://www.supercell.com/fan-content-policy" style="color:inherit">www.supercell.com/fan-content-policy</a>.
+  </footer>
+</div>
+
+<script>
+const G = __GAMEDATA__;
+const DEFAULT_ACC = __ACCOUNT__;
+__ANALYZE__
+const $ = id => document.getElementById(id);
+const fmtD = s => { const d = s / 86400; if (d >= 365) return (d / 365).toFixed(1) + ' y'; if (d >= 1) return d.toFixed(d < 10 ? 1 : 0) + ' d'; const h = s / 3600; return h >= 1 ? h.toFixed(1) + ' h' : Math.round(s / 60) + ' m'; };
+const fmtN = n => n >= 1e9 ? (n / 1e9).toFixed(2) + 'B' : n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e3 ? (n / 1e3).toFixed(0) + 'K' : String(n);
+const resCls = r => /Dark/.test(r || '') ? 'dark' : /Elixir/.test(r || '') ? 'elixir' : /Gold/.test(r || '') ? 'gold' : '';
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+let acc = DEFAULT_ACC, R = null, cat = 'All', laneSel = null;
+const ITEMS = [
+  ['builderPotion', 'Builder Potion'], ['researchPotion', 'Research Potion'], ['petPotion', 'Pet Potion'], ['clockPotion', 'Clock Tower Potion'],
+  ['bookBuilding', 'Book of Building'], ['bookHeroes', 'Book of Heroes'], ['bookFighting', 'Book of Fighting'], ['bookSpells', 'Book of Spells'], ['bookEverything', 'Book of Everything'],
+  ['hammerBuilding', 'Hammer of Building'], ['hammerHeroes', 'Hammer of Heroes'], ['hammerFighting', 'Hammer of Fighting'], ['hammerSpells', 'Hammer of Spells'],
+];
+let inv = {};
+try { const s = localStorage.getItem('coc-planner-acc'); if (s) acc = JSON.parse(s); } catch (e) {}
+try { inv = JSON.parse(localStorage.getItem('coc-planner-items') || '{}'); } catch (e) {}
+const QN = { builder: 'Builders', lab: 'Laboratory', pet: 'Pet House', bbBuilder: 'BB builders', bbLab: 'BB lab', smith: 'Blacksmith' };
+const CATCOL = { Buildings: 'var(--gold)', Traps: 'var(--warn)', Heroes: 'var(--elixir)', Guardians: 'var(--ok)', 'Crafted Defense': 'var(--ore)', Troops: 'var(--elixir)', Spells: 'var(--dark)', 'Siege Machines': 'var(--gold)', Pets: 'var(--dark)' };
+const H = 3600;
+
+// ---- gem formulas (interpolated between in-game breakpoints)
+function interp(x, pts) {
+  if (x <= 0) return 0;
+  if (x <= pts[0][0]) return pts[0][1];
+  for (let i = 1; i < pts.length; i++) if (x <= pts[i][0]) { const [a, ga] = pts[i - 1], [b, gb] = pts[i]; return ga + (x - a) * (gb - ga) / (b - a); }
+  const [a, ga] = pts[pts.length - 2], [b, gb] = pts[pts.length - 1]; return gb + (x - b) * (gb - ga) / (b - a);
+}
+const gemT = s => Math.ceil(interp(s, [[60, 1], [3600, 20], [86400, 260], [604800, 1000]]));
+const gemGE = n => Math.ceil(interp(n, [[100, 1], [1000, 5], [10000, 25], [100000, 125], [1e6, 600], [1e7, 3000]]));
+const gemDE = n => Math.ceil(interp(n, [[1, 1], [10, 5], [100, 25], [1000, 125], [10000, 600], [100000, 3000]]));
+const gemRes = (n, r) => !n ? 0 : /Dark/.test(r || '') ? gemDE(n) : gemGE(n);
+
+// ---- magic item assignment: each book/hammer finishes the longest matching level
+function assignItems(useItems) {
+  const saved = { builder: 0, lab: 0, pet: 0 }, uses = [];
+  if (!useItems) return { saved, uses };
+  const taken = new Map();
+  const isB = r => r.village === 'Home' && r.queue === 'builder' && r.cat !== 'Heroes';
+  const match = {
+    Building: isB, Heroes: r => r.village === 'Home' && r.cat === 'Heroes',
+    Fighting: r => r.village === 'Home' && (r.cat === 'Troops' || r.cat === 'Siege Machines'),
+    Spells: r => r.village === 'Home' && r.cat === 'Spells',
+    Everything: r => r.village === 'Home' && ['builder', 'lab', 'pet'].includes(r.queue),
+  };
+  const order = [['hammerBuilding', 'Building'], ['bookBuilding', 'Building'], ['hammerHeroes', 'Heroes'], ['bookHeroes', 'Heroes'], ['hammerFighting', 'Fighting'], ['bookFighting', 'Fighting'], ['hammerSpells', 'Spells'], ['bookSpells', 'Spells'], ['bookEverything', 'Everything']];
+  for (const [key, kind] of order) {
+    for (let k = 0; k < (+inv[key] || 0); k++) {
+      let best = -1, bt = 0;
+      R.steps.forEach((s, i) => { if (s.sc || s.t <= bt || (taken.get(i) || 0) >= s.n) return; if (match[kind](R.rows[s.ri])) { best = i; bt = s.t; } });
+      if (best < 0) break;
+      taken.set(best, (taken.get(best) || 0) + 1);
+      const s = R.steps[best], r = R.rows[s.ri];
+      saved[r.queue] += s.t;
+      uses.push({ item: ITEMS.find(x => x[0] === key)[1], name: r.name, lvl: s.lvl, t: s.t });
+    }
+  }
+  return { saved, uses };
+}
+
+function run() {
+  R = analyze(acc, G, { supercharges: $('optSC').checked, missing: $('optMiss').checked });
+  render();
+}
+function times() {
+  const boost = 1 - Math.min(90, Math.max(0, +$('optBoost').value || 0)) / 100;
+  const nb = Math.max(1, +$('optB').value || 6), nbb = Math.max(1, +$('optBB').value || 2);
+  const help = $('optHelp').checked, useItems = $('optItems').checked;
+  const appr = help ? (R.helpers[93000000] || 0) : 0, labA = help ? (R.helpers[93000001] || 0) : 0;
+  const it = assignItems(useItems), n = k => useItems ? (+inv[k] || 0) : 0;
+  const q = R.queue;
+  const pos = x => Math.max(0, x);
+  return {
+    nb, nbb, boost, appr, labA, it,
+    builder: pos((q.builder - it.saved.builder) * boost - 9 * H * nb * n('builderPotion')) / (nb + appr / 24),
+    lab: pos((q.lab - it.saved.lab) * boost - 23 * H * n('researchPotion')) / (1 + labA / 24),
+    pet: pos((q.pet - it.saved.pet) * boost - 23 * H * n('petPotion')),
+    bbBuilder: pos(q.bbBuilder * boost - 4.5 * H * nbb * n('clockPotion')) / nbb,
+    bbLab: pos(q.bbLab * boost - 4.5 * H * n('clockPotion')),
+  };
+}
+function render() {
+  const T = times();
+  const lanes = [['builder', 'var(--gold)'], ['lab', 'var(--elixir)'], ['pet', 'var(--dark)'], ['bbBuilder', 'var(--ore)'], ['bbLab', 'var(--ore)']];
+  const homeMax = Math.max(T.builder, T.lab, T.pet), longest = Math.max(...lanes.map(l => T[l[0]])) || 1;
+  const crit = ['builder', 'lab', 'pet'].find(k => T[k] === homeMax);
+  if (!laneSel) laneSel = crit;
+  $('heroNum').textContent = fmtD(homeMax);
+  $('heroSub').textContent = `Home Village, if every builder, the lab and the pet house never sit idle. ${QN[crit]} is the bottleneck. Tap a queue to see what's in it.`;
+  $('lanes').innerHTML = lanes.map(([k, c]) => `<button class="lane${k === crit ? ' crit' : ''}" aria-pressed="${k === laneSel}" data-lane="${k}"><span class="lbl">${QN[k]}</span><div class="bar"><div class="fill" style="width:${(T[k] / longest * 100).toFixed(1)}%;background:${c}"></div></div><span class="val">${fmtD(T[k])}</span></button>`).join('');
+  renderBreakdown(T);
+
+  const r = R.res, o = R.ore;
+  const cards = [['Gold', r.Gold, 'gold'], ['Elixir', r.Elixir, 'elixir'], ['Dark Elixir', r['Dark Elixir'], 'dark'], ['Walls (gold or elixir)', r['Wall Gold/Elixir'], 'gold'],
+    ['Shiny Ore', o.shiny_ore, 'ore'], ['Glowy Ore', o.glowy_ore, 'ore'], ['Starry Ore', o.starry_ore, 'ore'],
+    ['Builder Gold', r['Builder Gold'], 'gold'], ['Builder Elixir', r['Builder Elixir'], 'elixir'], ['BB walls', r['Wall BB'], 'gold']].filter(c => c[1]);
+  $('res').innerHTML = cards.map(c => `<div><small>${c[0]}</small><b class="${c[2]}">${fmtN(c[1])}</b></div>`).join('') || '<div>Nothing left. Maxed!</div>';
+  $('chips').innerHTML = (R.tag === '#DEMO0000' ? '<span class="chip" style="background:var(--warn);color:#2a1100;border-color:var(--warn)">Demo data</span>' : '') + `<span class="chip">${esc(R.tag || '')}</span><span class="chip">TH ${R.TH}</span><span class="chip">BH ${R.BH}</span>`;
+  $('sub').textContent = R.timestamp ? 'Export from ' + new Date(R.timestamp * 1000).toLocaleString() : '';
+  renderRecs(T); renderItems(T); renderP2W(); renderList(); renderStats();
+  $('foot').textContent = `Game data: ${G.dataDate}. Max levels are capped at your Town Hall.` + (R.unknown.length ? ` ${R.unknown.length} item(s) not in the data yet (IDs ${R.unknown.map(u => u.id).join(', ')}).` : '');
+}
+function renderBreakdown(T) {
+  const k = laneSel, rows = R.rows.filter(r => r.queue === k);
+  const by = {}; rows.forEach(r => by[r.cat] = (by[r.cat] || 0) + r.time + r.scTime);
+  const tot = Object.values(by).reduce((a, b) => a + b, 0);
+  if (!tot) { $('bd').innerHTML = `<b>${QN[k]}</b>: nothing left here.`; return; }
+  const ents = Object.entries(by).filter(e => e[1] > 0).sort((a, b) => b[1] - a[1]);
+  const top = rows.filter(r => r.time + r.scTime > 0).sort((a, b) => (b.time + b.scTime) - (a.time + a.scTime)).slice(0, 5);
+  const div = k === 'builder' ? T.nb : k === 'bbBuilder' ? T.nbb : 1;
+  $('bd').innerHTML = `<b>${QN[k]}</b> <span class="muted">· ${fmtD(tot)} of work${div > 1 ? ' total, shared by ' + div + ' builders' : ''} · ${rows.filter(r => r.steps > 0 || r.scMax > r.scCur).length} items</span>
+    <div class="stack">${ents.map(([c, v]) => `<i style="width:${v / tot * 100}%;background:${CATCOL[c] || 'var(--muted)'}" title="${c}"></i>`).join('')}</div>
+    <div class="leg">${ents.map(([c, v]) => `<span style="--c:${CATCOL[c] || 'var(--muted)'}">${c} ${fmtD(v)} (${Math.round(v / tot * 100)}%)</span>`).join('')}</div>
+    <div style="margin-top:10px;font-size:14px">Biggest chunks: ${top.map(r => `${esc(r.name)}${r.cnt > 1 ? ' ×' + r.cnt : ''} <b>${fmtD(r.time + r.scTime)}</b>`).join(', ')}</div>
+    <button class="linkbtn" data-showq="${k}">Show all ${QN[k]} upgrades in the list</button>`;
+}
+function recScore(r) {
+  const gap = r.max ? 1 - r.cur / r.max : 0, nd = r.next ? r.next.t / 86400 : 0;
+  let w = 1;
+  if (r.queue === 'builder') w = r.missing ? 3.2 : r.cat === 'Heroes' ? 3 : r.cat === 'Guardians' ? 2 : r.cat === 'Traps' ? 1.8 : r.cat === 'Crafted Defense' ? 1.2 :
+    r.type === 'Defense' || r.type === 'Town Hall' ? 2.4 : r.type === 'Worker' ? 1.6 : r.type === 'Army' ? 1.6 : r.type === 'Resource' ? 0.6 : 1;
+  else if (r.queue === 'lab') w = r.cat === 'Spells' ? 2 : r.cat === 'Siege Machines' ? 1.8 : 1.5;
+  else if (r.queue === 'smith') w = (r.rarity === 'Epic' ? 2 : 1) * (r.cur > 1 ? 1 : 0.3);
+  const scOnly = r.steps === 0 && r.scMax > r.scCur;
+  return (scOnly ? 0.15 : gap) * w + 0.15 * w / (1 + nd);
+}
+function recWhy(r) {
+  if (r.missing) return 'Not built yet: a whole new building for your base.';
+  if (r.steps === 0) return 'Already max level, supercharge is the only thing left.';
+  if (r.cat === 'Heroes') return `Heroes fight in every attack and defend. Lv ${r.cur} of ${r.max}.`;
+  if (r.queue === 'smith') return `${r.rarity || ''} gear for ${r.hero || 'a hero'}, Lv ${r.cur} of ${r.max}.`;
+  const p = Math.round(r.cur / r.max * 100);
+  return `Lv ${r.cur} of ${r.max} (${p}%), one of your furthest-behind ${r.cat.toLowerCase()}.`;
+}
+function renderRecs(T) {
+  const qs = [['builder', 'Builders'], ['lab', 'Laboratory'], ['pet', 'Pet House'], ['smith', 'Blacksmith (ore)']];
+  $('recs').innerHTML = qs.map(([k, label]) => {
+    const list = R.rows.filter(r => r.queue === k && r.village === 'Home' && !r.upgrading && !r.isWall && (r.steps > 0 || r.scMax > r.scCur)).sort((a, b) => recScore(b) - recScore(a)).slice(0, 3);
+    if (!list.length) return '';
+    return `<div><h3>${label}</h3>${list.map(r => {
+      const n = r.next || {};
+      const costTxt = n.ore ? `<span class="ore">${fmtN(n.ore.shiny_ore || 0)} shiny · ${fmtN(n.ore.glowy_ore || 0)} glowy · ${fmtN(n.ore.starry_ore || 0)} starry</span>` : n.cost ? `<span class="${resCls(n.res)}">${fmtN(n.cost)} ${esc(n.res || '')}</span>` : '';
+      return `<div class="rec"><b>${esc(r.name)}${r.cnt > 1 ? ' ×' + r.cnt : ''}</b><div class="why">${recWhy(r)}</div><div class="nx">Next level: ${n.t ? fmtD(n.t) + ' · ' : ''}${costTxt}</div></div>`;
+    }).join('')}</div>`;
+  }).join('');
+  const tips = [];
+  const ratio = T.lab / Math.max(1, T.builder);
+  if (ratio > 1.3) tips.push(`Your lab needs <b>${fmtD(T.lab)}</b>, your builders only <b>${fmtD(T.builder)}</b>. Research is what holds you back, so put Research Potions, Books/Hammers of Fighting and Spells, and the Lab Assistant here. A Gold Pass (−20% research time) would cut about <b>${fmtD(T.lab * 0.2)}</b>.`);
+  else if (T.builder > T.lab * 1.3) tips.push(`Builders are the bottleneck (${fmtD(T.builder)} vs lab ${fmtD(T.lab)}). Keep every builder busy and save Builder Potions for moments when all are running long upgrades.`);
+  const runningLab = R.rows.find(r => r.queue === 'lab' && r.upgrading);
+  if (!runningLab) tips.push('Your lab was idle at export time. Start a research now, every idle hour adds directly to the total.');
+  if (R.helpers[93000001] !== undefined && R.helpers[93000001] < 3 && ratio > 1.3) tips.push(`Lab Assistant is only level ${R.helpers[93000001]}. Leveling it speeds up your slowest queue.`);
+  $('tips').innerHTML = tips.map(x => `<p class="tip">${x}</p>`).join('');
+}
+function renderItems(T) {
+  $('items').innerHTML = ITEMS.map(([k, n]) => `<label>${n}<input type="number" min="0" max="99" data-item="${k}" value="${+inv[k] || 0}"></label>`).join('');
+  const b = R.boosts, hp = R.helpers, bits = [];
+  if (hp[93000000] !== undefined) bits.push(`Builder's Apprentice Lv ${hp[93000000]}`);
+  if (hp[93000001] !== undefined) bits.push(`Lab Assistant Lv ${hp[93000001]}`);
+  if (hp[93000002] !== undefined) bits.push(`Alchemist Lv ${hp[93000002]}`);
+  if (b.clocktower_boost) bits.push(`Clock Tower boost running (${fmtD(b.clocktower_boost)} left)`);
+  else if (b.clocktower_cooldown) bits.push(`Clock Tower ready in ${fmtD(b.clocktower_cooldown)}`);
+  $('exportBoosts').innerHTML = `From your export: ${bits.join(', ') || 'no boosts'}. The game export doesn't include your Town Hall item storage (potions, books, hammers), so enter them below. They're saved in this browser.`;
+  const u = T.it.uses, n = k => +inv[k] || 0;
+  const potSave = [n('builderPotion') && `Builder Potions save ${fmtD(9 * H * n('builderPotion'))} of real time`, n('researchPotion') && `Research Potions ${fmtD(23 * H * n('researchPotion'))}`, n('petPotion') && `Pet Potions ${fmtD(23 * H * n('petPotion'))}`, n('clockPotion') && `Clock Tower Potions ${fmtD(4.5 * H * n('clockPotion'))} on Builder Base`].filter(Boolean);
+  $('itemUse').innerHTML = (u.length ? `<h3>Best use of your books and hammers</h3>${u.map(x => `<div class="meter" style="grid-template-columns:1fr auto"><span><b>${x.item}</b> → ${esc(x.name)} Lv ${x.lvl}</span><span>saves ${fmtD(x.t)}</span></div>`).join('')}` : '') +
+    (potSave.length ? `<p class="note">${potSave.join(' · ')}.</p>` : '') + (!u.length && !potSave.length ? '<p class="note">Enter your items to see where they save the most time.</p>' : '') +
+    (!$('optItems').checked ? '<p class="note">Items are currently not counted in the time estimate.</p>' : '');
+}
+function renderP2W() {
+  const withRes = $('optGemRes').checked, price = (+$('optPrice').value || 109.99) / 14000;
+  const by = {}; let gT = 0, gR = 0, run = 0;
+  for (const s of R.steps) {
+    const r = R.rows[s.ri]; if (r.queue === 'smith') continue;
+    const t = gemT(s.t) * s.n, c = withRes ? gemRes(s.cost, s.res) * s.n : 0;
+    gT += t; gR += c; by[r.queue] = (by[r.queue] || 0) + t + c;
+    if (s.running) run += gemT(s.t);
+  }
+  const tot = gT + gR, eur = x => '€' + Math.round(x * price).toLocaleString();
+  $('gems').textContent = Math.round(tot).toLocaleString() + ' gems';
+  $('gemSub').innerHTML = `About <b>${eur(tot)}</b> at today's gem price, or ${(tot / 14000).toFixed(0)} of the biggest gem packs.`;
+  const cards = [['Skipping all the time', gT, ''], withRes ? ['Buying all resources', gR, ''] : null,
+    ...Object.entries(by).sort((a, b) => b[1] - a[1]).map(([k, v]) => [QN[k] || k, v, '']),
+    ['Finish only what is running now', run, '']].filter(Boolean);
+  $('p2w').innerHTML = cards.map(c => `<div><small>${c[0]}</small><b>${Math.round(c[1]).toLocaleString()}</b><small>${eur(c[1])}</small></div>`).join('');
+}
+
+const CATS = ['All', 'Buildings', 'Traps', 'Heroes', 'Troops', 'Spells', 'Siege Machines', 'Pets', 'Equipment', 'Crafted Defense', 'Guardians'];
+function renderList() {
+  const vil = $('vil').value, qs = $('q').value.trim().toLowerCase();
+  const qf = $('qf').value;
+  let rows = R.rows.filter(r => (r.steps > 0 || r.scMax > r.scCur || r.missing) && (vil === 'all' || r.village === vil) && (qf === 'all' || r.queue === qf));
+  const counts = {}; rows.forEach(r => counts[r.cat] = (counts[r.cat] || 0) + 1);
+  $('filters').innerHTML = CATS.filter(c => c === 'All' || counts[c]).map(c => `<button class="f" aria-pressed="${c === cat}" data-c="${c}">${c}${c === 'All' ? '' : ' ' + counts[c]}</button>`).join('');
+  if (cat !== 'All') rows = rows.filter(r => r.cat === cat);
+  if (qs) rows = rows.filter(r => r.name.toLowerCase().includes(qs));
+  const s = $('sort').value, sc = $('optSC').checked;
+  const tt = r => r.time + (sc ? r.scTime : 0);
+  rows.sort(s === 'time' ? (a, b) => tt(b) - tt(a) : s === 'steps' ? (a, b) => b.steps - a.steps : s === 'pct' ? (a, b) => a.cur / a.max - b.cur / b.max : (a, b) => a.name.localeCompare(b.name));
+  if (!rows.length) { $('list').innerHTML = '<div class="empty">Nothing left to upgrade here.</div>'; return; }
+  $('list').innerHTML = rows.map(r => {
+    const pct = r.max ? r.cur / r.max * 100 : 100;
+    const oreTxt = r.ore && (r.ore.shiny_ore || r.ore.glowy_ore || r.ore.starry_ore) ? `<span class="ore">${fmtN(r.ore.shiny_ore)}/${fmtN(r.ore.glowy_ore)}/${fmtN(r.ore.starry_ore)}</span>` : '';
+    const cost = r.cost ? `<span class="${resCls(r.res)}">${fmtN(r.cost)}</span>` : '';
+    const scTxt = sc && r.scMax > r.scCur ? `<span class="tag sc">SC ${r.scCur}/${r.scMax}</span>` : '';
+    return `<div class="row"><div class="nm">${esc(r.name)}${r.cnt > 1 ? ' ×' + r.cnt : ''}${r.upgrading ? '<span class="tag up">upgrading</span>' : ''}${r.missing ? '<span class="tag new">not built</span>' : ''}${scTxt}<small>${r.cat}${r.hero ? ' · ' + esc(r.hero) : ''}</small></div>
+      <div class="lvw"><div class="lv">Lv ${r.cur} → ${r.max}</div><div class="lvbar"><i style="width:${pct}%"></i></div></div>
+      <div class="t">${r.queue !== 'smith' && tt(r) ? fmtD(tt(r)) : '–'}</div><div class="c">${cost || oreTxt || (r.scCost && sc ? `<span class="${resCls(r.scRes)}">${fmtN(r.scCost)}</span>` : '')}</div></div>`;
+  }).join('');
+}
+function meter(lbl, a, b, extra, color) {
+  const p = b ? Math.min(100, a / b * 100) : 100;
+  return `<div class="meter"><span>${lbl}</span><div class="bar"><i style="width:${p}%;${color ? 'background:' + color : p >= 100 ? '' : 'background:' + (p < 60 ? 'var(--warn)' : 'var(--gold)')}"></i></div><span>${extra || Math.round(p) + '%'}</span></div>`;
+}
+function renderStats() {
+  const rows = R.rows.filter(r => r.village === 'Home');
+  const agg = {};
+  rows.forEach(r => { const a = agg[r.cat] = agg[r.cat] || [0, 0]; a[0] += r.cur * r.cnt; a[1] += r.max * r.cnt; });
+  const bb = R.rows.filter(r => r.village !== 'Home'); const bbA = bb.reduce((a, r) => [a[0] + r.cur * r.cnt, a[1] + r.max * r.cnt], [0, 0]);
+  const allA = Object.values(agg).reduce((a, b) => [a[0] + b[0], a[1] + b[1]], [0, 0]);
+  $('stCat').innerHTML = meter('<b>Home total</b>', allA[0], allA[1]) + Object.entries(agg).sort((a, b) => a[1][0] / a[1][1] - b[1][0] / b[1][1]).map(([k, v]) => meter(k, v[0], v[1])).join('') + meter('<b>Builder Base</b>', bbA[0], bbA[1]) + '<p class="note">Share of all upgrade levels already done, weighted by building count.</p>';
+  const heroes = R.rows.filter(r => r.cat === 'Heroes');
+  $('stHero').innerHTML = heroes.map(h => meter(esc(h.name), h.cur, h.max, `${h.cur}/${h.max}`)).join('') + (heroes.length ? `<p class="note">Hero levels left: ${heroes.reduce((s, h) => s + h.max - h.cur, 0)}, about ${fmtD(heroes.reduce((s, h) => s + h.time, 0))} of builder time.</p>` : '');
+  const eq = {}; R.rows.filter(r => r.cat === 'Equipment').forEach(r => { const k = r.hero || 'Other'; const a = eq[k] = eq[k] || [0, 0, 0, 0]; a[0] += r.cur; a[1] += r.max; a[2]++; if (r.cur >= r.max) a[3]++; });
+  $('stEq').innerHTML = Object.entries(eq).map(([k, v]) => meter(esc(k), v[0], v[1], `${v[3]}/${v[2]}`)).join('') + '<p class="note">Right column: pieces fully maxed. Equipment costs ore, not builder time.</p>';
+  const sc = $('optSC').checked;
+  const top = R.rows.filter(r => r.queue && r.queue !== 'smith').map(r => ({ ...r, tt: r.time + (sc ? r.scTime : 0) })).sort((a, b) => b.tt - a.tt).slice(0, 8);
+  const tot = R.rows.filter(r => r.queue && r.queue !== 'smith').reduce((s, r) => s + r.time + (sc ? r.scTime : 0), 0) || 1;
+  $('stTop').innerHTML = top.map(r => meter(esc(r.name) + (r.cnt > 1 ? ' ×' + r.cnt : ''), r.tt, top[0].tt, fmtD(r.tt), 'var(--gold)')).join('') + `<p class="note">These ${top.length} lines are ${Math.round(top.reduce((s, r) => s + r.tt, 0) / tot * 100)}% of all remaining upgrade time.</p>`;
+  const runs = R.rows.filter(r => r.upgrading);
+  $('stRun').innerHTML = runs.length ? runs.map(r => `<div class="meter" style="grid-template-columns:1fr auto"><span>${esc(r.name)} → Lv ${r.cur + 1}</span><span>${fmtD(r.timer)}</span></div>`).join('') + '<p class="note">Remaining time at the moment of export.</p>' : '<p class="muted">Nothing upgrading at export time.</p>';
+  const walls = R.rows.filter(r => r.name === 'Wall' && r.village === 'Home');
+  const wallsMax = walls.filter(w => w.cur >= w.max).reduce((s, w) => s + w.cnt, 0), wallsTot = walls.reduce((s, w) => s + w.cnt, 0);
+  const lowest = R.rows.filter(r => r.village === 'Home' && r.max > 1 && r.queue === 'builder' && !r.missing && r.cur > 0).sort((a, b) => a.cur / a.max - b.cur / b.max)[0];
+  const maxedLines = R.rows.filter(r => r.village === 'Home' && r.cur >= r.max).length, allLines = R.rows.filter(r => r.village === 'Home').length;
+  const steps = R.rows.filter(r => r.village === 'Home').reduce((s, r) => s + r.steps, 0);
+  const pets = R.rows.filter(r => r.cat === 'Pets'), petsMax = pets.filter(p => p.cur >= p.max).length;
+  const fun = [
+    `Walls maxed: <b>${wallsMax} / ${wallsTot}</b>`,
+    `Fully maxed items: <b>${maxedLines} of ${allLines}</b> entries`,
+    `Single level-ups still to tap: <b>${steps.toLocaleString()}</b>`,
+    `Pets maxed: <b>${petsMax} / ${pets.length}</b>`,
+    lowest ? `Most behind: <b>${esc(lowest.name)}</b> at Lv ${lowest.cur}/${lowest.max}` : '',
+    `Lab vs builders: the lab needs <b>${fmtD(R.queue.lab)}</b>, one builder alone would need <b>${fmtD(R.queue.builder)}</b>`,
+  ].filter(Boolean);
+  $('stFun').innerHTML = fun.map(f => `<p style="margin:6px 0">${f}</p>`).join('');
+}
+document.addEventListener('click', e => {
+  const t = e.target.closest('.tab'); if (t) { document.querySelectorAll('.tab').forEach(x => x.setAttribute('aria-selected', x === t)); $('tab-list').hidden = t.dataset.tab !== 'list'; $('tab-stats').hidden = t.dataset.tab !== 'stats'; }
+  const f = e.target.closest('.f'); if (f) { cat = f.dataset.c; renderList(); }
+  const l = e.target.closest('[data-lane]'); if (l) { laneSel = l.dataset.lane; document.querySelectorAll('[data-lane]').forEach(x => x.setAttribute('aria-pressed', x === l)); renderBreakdown(times()); }
+  const sq = e.target.closest('[data-showq]'); if (sq) { const k = sq.dataset.showq; $('qf').value = k; $('vil').value = k.startsWith('bb') ? 'Builder Base' : 'Home'; cat = 'All'; document.querySelector('[data-tab=list]').click(); renderList(); $('tab-list').scrollIntoView({ behavior: 'smooth' }); }
+});
+['q', 'sort', 'vil', 'qf'].forEach(id => $(id).addEventListener('input', renderList));
+['optB', 'optBB', 'optBoost'].forEach(id => $(id).addEventListener('input', render));
+['optHelp', 'optItems'].forEach(id => $(id).addEventListener('change', render));
+['optPrice', 'optGemRes'].forEach(id => $(id).addEventListener('input', renderP2W));
+document.addEventListener('change', e => { const k = e.target.dataset && e.target.dataset.item; if (!k) return; inv[k] = Math.max(0, +e.target.value || 0); try { localStorage.setItem('coc-planner-items', JSON.stringify(inv)); } catch (x) {} render(); });
+['optSC', 'optMiss'].forEach(id => $(id).addEventListener('change', run));
+$('load').addEventListener('click', () => {
+  $('err').textContent = '';
+  try {
+    const a = JSON.parse($('paste').value);
+    if (!a.buildings) throw new Error('This JSON has no "buildings" list. Copy the full data export from the game.');
+    acc = a; try { localStorage.setItem('coc-planner-acc', JSON.stringify(a)); } catch (e) {}
+    run(); window.scrollTo({ top: 0, behavior: 'smooth' });
+  } catch (e) { $('err').textContent = 'Could not read that export: ' + e.message; }
+});
+run();
+if (acc.tag === '#DEMO0000') document.querySelector('details').open = true;
+</script>
+</body>
+</html>
