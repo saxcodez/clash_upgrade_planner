@@ -104,6 +104,14 @@ button.lane:focus-visible{outline:3px solid var(--ore)}
 .p2w-grid div{background:var(--panel2);border-radius:10px;padding:10px 12px}
 .p2w-grid b{display:block;font-family:"Lilita One",sans-serif;font-weight:400;font-size:22px}
 .p2w-grid small{color:var(--muted)}
+#histBar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:16px}
+#histBar select{flex:1;min-width:220px}
+.hbtn{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-weight:800}
+.hbtn:disabled{opacity:.4;cursor:default}
+.delta{margin-top:8px;font-weight:800;color:var(--ok)}
+.hist{display:grid;gap:6px;margin-top:10px}
+.hist div{display:flex;justify-content:space-between;align-items:center;gap:8px;background:var(--panel2);border-radius:8px;padding:6px 10px;font-size:14px}
+.hist button{background:none;border:0;color:var(--warn);font-weight:800}
 @media (max-width:640px){button.lane{grid-template-columns:96px 1fr 70px}}
 @media (max-width:640px){
   .lane{grid-template-columns:96px 1fr 70px}
@@ -115,16 +123,25 @@ button.lane:focus-visible{outline:3px solid var(--ore)}
 </style>
 </head>
 <body>
+<div id="tplWarn" style="background:#ff9d5c;color:#2a1100;padding:14px;font:700 16px system-ui;text-align:center">This is the build template and can't run on its own. Open <u>index.html</u> in the main folder instead.</div>
 <div class="wrap">
   <div class="top">
     <div><h1>Clash Upgrade Planner</h1><div class="muted" id="sub"></div></div>
     <div class="chips" id="chips"></div>
   </div>
 
+  <div id="histBar" aria-label="Saved exports">
+    <button class="hbtn" id="hPrev" aria-label="Older export">◀</button>
+    <select id="hSel" aria-label="Choose a saved export"></select>
+    <button class="hbtn" id="hNext" aria-label="Newer export">▶</button>
+    <button class="hbtn" id="hNew">+ New export</button>
+  </div>
+
   <section class="panel" aria-labelledby="h-total">
     <h2 id="h-total" class="muted" style="font-size:18px;margin-bottom:4px">Time until everything is maxed</h2>
     <div class="hero-num" id="heroNum">–</div>
     <div class="hero-sub" id="heroSub"></div>
+    <div class="delta" id="delta"></div>
     <div class="lanes" id="lanes" aria-label="Tap a queue to see what is in it"></div>
     <div class="bd" id="bd"></div>
     <div class="settings">
@@ -208,11 +225,16 @@ button.lane:focus-visible{outline:3px solid var(--ore)}
       <textarea id="paste" spellcheck="false" placeholder='{"tag":"#...","buildings":[...]}'></textarea>
       <button class="btn" id="load">Analyze export</button>
       <div class="err" id="err" role="alert"></div>
+      <h3 style="margin-top:18px">Saved exports</h3>
+      <p class="note" style="margin-top:0">Every export you analyze is saved here by date, so you can jump back and compare progress. Stored in this browser only.</p>
+      <div class="hist" id="histList"></div>
+      <button class="hbtn" id="backup" style="margin-top:10px">Download backup</button>
+      <p class="note">To restore a backup, paste its content into the box above and tap Analyze.</p>
     </details>
     <p class="note" id="foot"></p>
   </section>
   <footer class="note" style="text-align:center;margin-top:24px">
-    Clash Upgrade Planner v1.2.0 · © 2026 <a href="https://github.com/saxcodez" style="color:inherit">saxcodez</a> · PolyForm Noncommercial 1.0.0<br>
+    Clash Upgrade Planner v1.3.0 · © 2026 <a href="https://github.com/saxcodez" style="color:inherit">saxcodez</a> · PolyForm Noncommercial 1.0.0<br>
     This material is unofficial and is not endorsed by Supercell. For more information see Supercell's Fan Content Policy: <a href="https://www.supercell.com/fan-content-policy" style="color:inherit">www.supercell.com/fan-content-policy</a>.
   </footer>
 </div>
@@ -334,7 +356,36 @@ const ITEMS = [
   ['hammerBuilding', 'Hammer of Building'], ['hammerHeroes', 'Hammer of Heroes'], ['hammerFighting', 'Hammer of Fighting'], ['hammerSpells', 'Hammer of Spells'],
 ];
 let inv = {};
-try { const s = localStorage.getItem('coc-planner-acc'); if (s) acc = JSON.parse(s); } catch (e) {}
+// ---- saved exports (history)
+const HKEY = 'coc-planner-history';
+let hist = [], curId = null;
+const snapId = a => (a.tag || '?') + '@' + (a.timestamp || 0);
+function loadHist() { try { hist = JSON.parse(localStorage.getItem(HKEY) || '[]'); } catch (e) { hist = []; } }
+function saveHist() { try { localStorage.setItem(HKEY, JSON.stringify(hist)); localStorage.setItem('coc-planner-current', curId || ''); return true; } catch (e) { $('err').textContent = 'Browser storage is full. Delete some older exports.'; return false; } }
+function addSnap(a) {
+  const id = snapId(a);
+  if (!hist.find(h => h.id === id)) {
+    const th = (a.buildings || []).find(b => b.data === 1000001);
+    hist.push({ id, tag: a.tag || '', ts: a.timestamp || Math.floor(Date.now() / 1000), saved: Date.now(), th: th ? th.lvl : null, data: a });
+    hist.sort((x, y) => x.ts - y.ts);
+  }
+  curId = id; saveHist();
+}
+const fmtDate = s => new Date(s * 1000).toLocaleString(undefined, { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+function renderHist() {
+  const sel = $('hSel');
+  if (!hist.length) { sel.innerHTML = '<option>Demo data (no saved exports yet)</option>'; sel.disabled = true; $('hPrev').disabled = $('hNext').disabled = true; $('histList').innerHTML = '<p class="muted">Nothing saved yet.</p>'; return; }
+  sel.disabled = false;
+  sel.innerHTML = hist.slice().reverse().map(h => `<option value="${esc(h.id)}"${h.id === curId ? ' selected' : ''}>${fmtDate(h.ts)} · ${esc(h.tag)}${h.th ? ' · TH' + h.th : ''}</option>`).join('');
+  const i = hist.findIndex(h => h.id === curId);
+  $('hPrev').disabled = i <= 0; $('hNext').disabled = i < 0 || i >= hist.length - 1;
+  $('histList').innerHTML = hist.slice().reverse().map(h => `<div><span>${fmtDate(h.ts)} · ${esc(h.tag)}${h.th ? ' · TH' + h.th : ''}${h.id === curId ? ' <b>(shown)</b>' : ''}</span><button data-del="${esc(h.id)}" aria-label="Delete export from ${fmtDate(h.ts)}">Delete</button></div>`).join('');
+}
+function showSnap(id) { const h = hist.find(x => x.id === id); if (!h) return; curId = id; acc = h.data; saveHist(); run(); }
+loadHist();
+try { const old = localStorage.getItem('coc-planner-acc'); if (old) { addSnap(JSON.parse(old)); localStorage.removeItem('coc-planner-acc'); } } catch (e) {}
+if (DEFAULT_ACC.tag !== '#DEMO0000') addSnap(DEFAULT_ACC);
+{ const c = localStorage.getItem('coc-planner-current'); const h = hist.find(x => x.id === c) || hist[hist.length - 1]; if (h) { curId = h.id; acc = h.data; } }
 try { inv = JSON.parse(localStorage.getItem('coc-planner-items') || '{}'); } catch (e) {}
 const QN = { builder: 'Builders', lab: 'Laboratory', pet: 'Pet House', bbBuilder: 'BB builders', bbLab: 'BB lab', smith: 'Blacksmith' };
 const CATCOL = { Buildings: 'var(--gold)', Traps: 'var(--warn)', Heroes: 'var(--elixir)', Guardians: 'var(--ok)', 'Crafted Defense': 'var(--ore)', Troops: 'var(--elixir)', Spells: 'var(--dark)', 'Siege Machines': 'var(--gold)', Pets: 'var(--dark)' };
@@ -410,6 +461,8 @@ function render() {
   $('heroSub').textContent = `Home Village, if every builder, the lab and the pet house never sit idle. ${QN[crit]} is the bottleneck. Tap a queue to see what's in it.`;
   $('lanes').innerHTML = lanes.map(([k, c]) => `<button class="lane${k === crit ? ' crit' : ''}" aria-pressed="${k === laneSel}" data-lane="${k}"><span class="lbl">${QN[k]}</span><div class="bar"><div class="fill" style="width:${(T[k] / longest * 100).toFixed(1)}%;background:${c}"></div></div><span class="val">${fmtD(T[k])}</span></button>`).join('');
   renderBreakdown(T);
+  renderDelta(homeMax);
+  renderHist();
 
   const r = R.res, o = R.ore;
   const cards = [['Gold', r.Gold, 'gold'], ['Elixir', r.Elixir, 'elixir'], ['Dark Elixir', r['Dark Elixir'], 'dark'], ['Walls (gold or elixir)', r['Wall Gold/Elixir'], 'gold'],
@@ -420,6 +473,19 @@ function render() {
   $('sub').textContent = R.timestamp ? 'Export from ' + new Date(R.timestamp * 1000).toLocaleString() : '';
   renderRecs(T); renderItems(T); renderP2W(); renderList(); renderStats();
   $('foot').textContent = `Game data: ${G.dataDate}. Max levels are capped at your Town Hall.` + (R.unknown.length ? ` ${R.unknown.length} item(s) not in the data yet (IDs ${R.unknown.map(u => u.id).join(', ')}).` : '');
+}
+function homeTimeFor(a) {
+  const keep = R; R = analyze(a, G, { supercharges: $('optSC').checked, missing: $('optMiss').checked });
+  const T = times(), steps = R.rows.filter(r => r.village === 'Home').reduce((s, r) => s + r.steps, 0); R = keep;
+  return { max: Math.max(T.builder, T.lab, T.pet), steps };
+}
+function renderDelta(homeMax) {
+  const i = hist.findIndex(h => h.id === curId);
+  const prev = i > 0 ? hist.slice(0, i).reverse().find(h => h.tag === hist[i].tag) : null;
+  if (!prev) { $('delta').textContent = ''; return; }
+  const p = homeTimeFor(prev.data), nowSteps = R.rows.filter(r => r.village === 'Home').reduce((s, r) => s + r.steps, 0);
+  const lv = p.steps - nowSteps, dt = p.max - homeMax;
+  $('delta').textContent = `Since ${fmtDate(prev.ts)}: ${lv >= 0 ? lv : 0} levels done · ${dt >= 0 ? fmtD(dt) + ' closer to max' : fmtD(-dt) + ' more (new content added?)'}`;
 }
 function renderBreakdown(T) {
   const k = laneSel, rows = R.rows.filter(r => r.queue === k);
@@ -581,12 +647,34 @@ document.addEventListener('change', e => { const k = e.target.dataset && e.targe
 $('load').addEventListener('click', () => {
   $('err').textContent = '';
   try {
-    const a = JSON.parse($('paste').value);
+    const a = JSON.parse($('paste').value.trim());
+    if (a.cocPlannerBackup && Array.isArray(a.history)) {
+      a.history.forEach(h => { if (!hist.find(x => x.id === h.id)) hist.push(h); });
+      hist.sort((x, y) => x.ts - y.ts); const last = hist[hist.length - 1]; curId = last.id; acc = last.data; saveHist();
+      $('paste').value = ''; run(); return;
+    }
     if (!a.buildings) throw new Error('This JSON has no "buildings" list. Copy the full data export from the game.');
-    acc = a; try { localStorage.setItem('coc-planner-acc', JSON.stringify(a)); } catch (e) {}
+    acc = a; addSnap(a); $('paste').value = '';
     run(); window.scrollTo({ top: 0, behavior: 'smooth' });
   } catch (e) { $('err').textContent = 'Could not read that export: ' + e.message; }
 });
+$('hSel').addEventListener('change', e => showSnap(e.target.value));
+$('hPrev').addEventListener('click', () => { const i = hist.findIndex(h => h.id === curId); if (i > 0) showSnap(hist[i - 1].id); });
+$('hNext').addEventListener('click', () => { const i = hist.findIndex(h => h.id === curId); if (i < hist.length - 1) showSnap(hist[i + 1].id); });
+$('hNew').addEventListener('click', () => { const d = document.querySelector('details'); d.open = true; d.scrollIntoView({ behavior: 'smooth' }); setTimeout(() => $('paste').focus(), 400); });
+document.addEventListener('click', e => {
+  const d = e.target.closest('[data-del]'); if (!d) return;
+  const h = hist.find(x => x.id === d.dataset.del);
+  if (!h || !confirm('Delete the export from ' + fmtDate(h.ts) + '?')) return;
+  hist = hist.filter(x => x.id !== h.id);
+  if (curId === h.id) { const last = hist[hist.length - 1]; curId = last ? last.id : null; acc = last ? last.data : DEFAULT_ACC; }
+  saveHist(); run();
+});
+$('backup').addEventListener('click', () => {
+  const blob = new Blob([JSON.stringify({ cocPlannerBackup: 1, history: hist })], { type: 'application/json' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'clash-planner-backup-' + new Date().toISOString().slice(0, 10) + '.json'; a.click();
+});
+document.getElementById('tplWarn').remove();
 run();
 if (acc.tag === '#DEMO0000') document.querySelector('details').open = true;
 </script>

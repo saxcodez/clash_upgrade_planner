@@ -6,7 +6,7 @@
 
 Copy your data export from the game, paste it in, done. No login, no API key, no connection to the game.
 
-![Version](https://img.shields.io/badge/version-1.2.0-f5c518)
+![Version](https://img.shields.io/badge/version-1.3.0-f5c518)
 ![Game data](https://img.shields.io/badge/game%20data-TH18%20%C2%B7%20BH10%20%C2%B7%20Sep%202026-7fd3e8)
 ![iOS](https://img.shields.io/badge/iOS-tested-7ddc7d)
 ![Android](https://img.shields.io/badge/Android-needs%20testing-ff9d5c)
@@ -34,6 +34,7 @@ The game tells you what you *can* upgrade next. It doesn't tell you how far you 
 - 🧪 **Magic items**: enter your potions, books and hammers; the planner puts each book/hammer on the upgrade where it saves the most time
 - 🧑‍🔧 **Helpers**: Builder's Apprentice and Lab Assistant levels from your export are included automatically
 - 📊 **Stats**: completion per category, heroes, equipment per hero, what's upgrading right now, fun facts
+- 🗂️ **Saved exports**: every export is saved by date. Jump back to older ones and see your progress since the last export (levels done, days closer to max). Backup and restore included
 - 📋 **Full upgrade list**: filter by category, queue and village; search and sort
 - 📱 Works on phone and desktop, light and dark mode
 
@@ -47,11 +48,13 @@ The game tells you what you *can* upgrade next. It doesn't tell you how far you 
 
 ## How to use
 
-1. **Open the planner**: open `index.html` in your browser (or use the GitHub Pages link of this repo, if enabled).
+1. **Open the planner**: double-click `index.html` in the main folder (or use the GitHub Pages link of this repo, if enabled). Don't open `src/template.html`, that's only the build template.
 2. **Copy your data in Clash of Clans**: Settings → More Settings → scroll down to **Data Export** → tap **Copy**.
 3. **Paste it**: at the bottom of the planner, open **Load your own export**, paste the text and tap **Analyze export**.
 
-That's it. Your export is remembered in your browser for next time. To switch accounts, just paste another export.
+That's it. Each export is saved by date in your browser. Use the ◀ ▶ arrows or the dropdown at the top to jump between them, and **+ New export** to add the next one. Multiple accounts work too.
+
+> Saved exports live in your browser's storage. Use **Download backup** now and then, and paste the backup file's content into the box to restore it (for example on another device).
 
 > The export contains no password or login data. Still, there's no reason to post it publicly.
 

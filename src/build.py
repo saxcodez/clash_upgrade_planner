@@ -6,7 +6,7 @@ Usage:
 """
 import json, sys, pathlib
 
-VERSION = "1.2.0"
+VERSION = "1.3.0"
 here = pathlib.Path(__file__).parent
 acc = pathlib.Path(sys.argv[1]) if len(sys.argv) > 1 else here / "demo-account.json"
 analyze = (here / "analyze.js").read_text(encoding="utf-8").replace(

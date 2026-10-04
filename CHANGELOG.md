@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.3.0
+- Saved exports: history by date with ◀ ▶ navigation, delete, backup and restore
+- Progress since the previous export of the same player
+- Clear warning when the build template is opened instead of index.html
+
 ## 1.2.0
 - Demo account as default, copyright and fan content disclaimer, GitHub release files.
 
